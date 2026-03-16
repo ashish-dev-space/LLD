@@ -1,21 +1,18 @@
 # The Singleton Pattern is a creational design pattern that ensures:
-
 # 1️⃣ Only one instance of a class exists in the application
 # 2️⃣ A global access point to that instance is provided
-
 # In simple words:
-
 # No matter how many times you create the object, the system always returns the same object.
-
 # Use Case                  Why Singleton
-
 # Logger                    Avoid multiple loggers writing simultaneously
 # Configuration Manager     One shared configuration
 # Database Connection Pool  Prevent multiple connections being created
 # Cache Manager             Shared cache across application
 # Feature Flag Manager      Same configuration across services
 
+
 class Logger:
+
     _instance = None
 
     def __new__(cls):
@@ -44,6 +41,7 @@ class Logger:
 
 import sqlite3
 
+
 class DBManager:
 
     _instance = None
@@ -57,7 +55,8 @@ class DBManager:
 
     def get_connection(self):
         return self.connection
-    
+
+
 # db1 = DBManager()
 # db2 = DBManager()
 # print(db1.get_connection())
