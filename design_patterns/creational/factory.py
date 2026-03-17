@@ -1,64 +1,128 @@
 # Factory Pattern
-# Creates objects without exposing the creation logic
-# # The Factory Pattern is a creational design pattern that
-# provides an interface for creating objects but allows
-# subclasses to alter the type of objects that will be created.
-# In simpler terms:
-# Rather than calling a constructor directly to create an
-# object, we use a factory method to create that object
-# based on some input or condition.
+#
+# Creates objects without exposing the instantiation logic to the client.
+# The client asks a factory for an object by type; the factory decides
+# which concrete class to instantiate.
+#
 # Use Case                  Why Factory
-# Notifications             Different notification types (email, SMS, push)
-# Payment Processing        Different payment gateways (Stripe, PayPal)
+# Notifications             Different channels (email, SMS, push)
+# Payment Processing        Different gateways (Stripe, PayPal, Razorpay)
 # Data Parsers              Different file formats (JSON, XML, CSV)
-# Logistics Interface
+# Logistics                 Different transport modes (road, air, sea)
 from abc import ABC
 from abc import abstractmethod
+from typing import Callable
+
+
+# ── Example 1 : Notification ──────────────────────────────────────────────────
 
 
 class Notification(ABC):
     @abstractmethod
-    def send(self):
+    def send(self, message: str):
         pass
 
 
-# Class implementing the Notification Interface
 class EmailNotification(Notification):
-    def send(self):
-        print("Sending email notification")
+    def send(self, message: str):
+        print(f"[Email] {message}")
 
 
-# Class implementing the Notification Interface
 class SMSNotification(Notification):
-    def send(self):
-        print("Sending SMS notification")
+    def send(self, message: str):
+        print(f"[SMS] {message}")
 
 
-# Factory Class taking care of Logistics
+class PushNotification(Notification):
+    def send(self, message: str):
+        print(f"[Push] {message}")
+
+
 class NotificationFactory:
-    _registry = {
+    # Adding a new channel = one new dict entry, zero logic changes
+    _registry: dict[str, Callable[[], Notification]] = {
         "email": EmailNotification,
         "sms": SMSNotification,
+        "push": PushNotification,
     }
 
     @staticmethod
-    def get_service(mode):
-        cls = NotificationFactory._registry.get(mode.lower())
+    def get(channel: str) -> Notification:
+        cls = NotificationFactory._registry.get(channel.lower())
         if cls is None:
-            raise ValueError(f"Unknown notification mode: {mode}")
+            raise ValueError(f"Unknown notification channel: {channel}")
         return cls()
 
 
-# Class implementing the Notification Services
 class NotificationService:
-    def send(self, mode):
-        # Using the Notification Factory to get the desired object based on the mode
-        notification = NotificationFactory.get_service(mode)
-        notification.send()
+    def notify(self, channel: str, message: str):
+        NotificationFactory.get(channel).send(message)
 
 
-# Driver Code
+# ── Example 2 : Payment Gateway ───────────────────────────────────────────────
+
+
+class PaymentGateway(ABC):
+    @abstractmethod
+    def pay(self, amount: float):
+        pass
+
+
+class StripeGateway(PaymentGateway):
+    def pay(self, amount: float):
+        print(f"[Stripe] Charged ${amount:.2f}")
+
+
+class PayPalGateway(PaymentGateway):
+    def pay(self, amount: float):
+        print(f"[PayPal] Charged ${amount:.2f}")
+
+
+class RazorpayGateway(PaymentGateway):
+    def pay(self, amount: float):
+        print(f"[Razorpay] Charged ₹{amount:.2f}")
+
+
+class PaymentFactory:
+    _registry: dict[str, Callable[[], PaymentGateway]] = {
+        "stripe": StripeGateway,
+        "paypal": PayPalGateway,
+        "razorpay": RazorpayGateway,
+    }
+
+    @staticmethod
+    def get(provider: str) -> PaymentGateway:
+        cls = PaymentFactory._registry.get(provider.lower())
+        if cls is None:
+            raise ValueError(f"Unknown payment provider: {provider}")
+        return cls()
+
+
+class PaymentService:
+    def charge(self, provider: str, amount: float):
+        PaymentFactory.get(provider).pay(amount)
+
+
+# ── Driver Code ───────────────────────────────────────────────────────────────
+
 if __name__ == "__main__":
-    service = NotificationService()
-    service.send("email")
-    service.send("sms")
+    notifier = NotificationService()
+    notifier.notify("email", "Your order has been placed.")
+    notifier.notify("sms", "Your OTP is 482910.")
+    notifier.notify("push", "Flash sale starts now!")
+
+    print()
+
+    payments = PaymentService()
+    payments.charge("stripe", 49.99)
+    payments.charge("paypal", 149.00)
+    payments.charge("razorpay", 999.00)
+
+# Output:
+# [Email] Your order has been placed.
+# [SMS] Your OTP is 482910.
+# [Push] Flash sale starts now!
+#
+# [Stripe] Charged $49.99
+# [PayPal] Charged $149.00
+# [Razorpay] Charged ₹999.00
